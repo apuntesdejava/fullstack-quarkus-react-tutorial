@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+           https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.quarkstack</groupId>
+        <artifactId>quarkstack-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkstack-adapter-messaging</artifactId>
+    <name>QuarkStack :: Adapter :: Messaging</name>
+    <description>
+        Adaptadores de entrada y salida para mensajería asíncrona.
+        Producers y Consumers de Kafka via SmallRye Reactive Messaging.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.quarkstack</groupId>
+            <artifactId>quarkstack-application</artifactId>
+        </dependency>
+
+        <!-- Kafka via SmallRye Reactive Messaging -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-kafka</artifactId>
+        </dependency>
+
+        <!-- CDI -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
