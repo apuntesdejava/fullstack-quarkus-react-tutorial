@@ -1,0 +1,117 @@
+# =============================================================================
+# QuarkStack — Docker Compose local
+# Uso (🐧 y 🪟 igual):
+#   docker compose -f infra/docker/docker-compose.yml up -d
+#   docker compose -f infra/docker/docker-compose.yml down
+# =============================================================================
+
+name: quarkstack
+
+services:
+
+  postgres:
+    image: postgres:17.9-alpine
+    container_name: quarkstack-postgres
+    environment:
+      POSTGRES_DB: quarkstack
+      POSTGRES_USER: quarkstack
+      POSTGRES_PASSWORD: quarkstack123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quarkstack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quarkstack-net
+
+  mongodb:
+    image: mongo:8.2.7
+    container_name: quarkstack-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: quarkstack
+      MONGO_INITDB_ROOT_PASSWORD: quarkstack123
+      MONGO_INITDB_DATABASE: quarkstack
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quarkstack-net
+
+  kafka:
+    image: apache/kafka:3.9.1
+    container_name: quarkstack-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh",
+             "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - quarkstack-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: quarkstack-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: quarkstack-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8090:8080"
+    networks:
+      - quarkstack-net
+
+  # Keycloak — se configura en el Ep 24
+  # Comenta este bloque hasta entonces
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: quarkstack-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: dev-mem
+      KC_HTTP_PORT: 8180
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    networks:
+      - quarkstack-net
+
+networks:
+  quarkstack-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
+  kafka_data:
